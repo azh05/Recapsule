@@ -1,0 +1,69 @@
+from datetime import datetime, timezone
+from enum import Enum
+
+from pydantic import BaseModel, Field
+
+
+class EpisodeStatus(str, Enum):
+    pending = "pending"
+    researching = "researching"
+    scriptwriting = "scriptwriting"
+    generating_audio = "generating_audio"
+    stitching = "stitching"
+    completed = "completed"
+    failed = "failed"
+
+
+class GenerateRequest(BaseModel):
+    topic: str = Field(..., min_length=3, max_length=200)
+
+
+class DialogueLine(BaseModel):
+    speaker: str
+    text: str
+
+
+class EpisodeResponse(BaseModel):
+    id: str
+    topic: str
+    status: EpisodeStatus
+    created_at: datetime
+    research_notes: str | None = None
+    script: list[DialogueLine] | None = None
+    audio_url: str | None = None
+    duration_seconds: float | None = None
+    error: str | None = None
+
+
+class EpisodeListItem(BaseModel):
+    id: str
+    topic: str
+    status: EpisodeStatus
+    created_at: datetime
+    audio_url: str | None = None
+    duration_seconds: float | None = None
+
+
+def doc_to_episode_response(doc: dict) -> EpisodeResponse:
+    return EpisodeResponse(
+        id=str(doc["_id"]),
+        topic=doc["topic"],
+        status=doc["status"],
+        created_at=doc["created_at"],
+        research_notes=doc.get("research_notes"),
+        script=[DialogueLine(**line) for line in doc["script"]] if doc.get("script") else None,
+        audio_url=doc.get("audio_url"),
+        duration_seconds=doc.get("duration_seconds"),
+        error=doc.get("error"),
+    )
+
+
+def doc_to_episode_list_item(doc: dict) -> EpisodeListItem:
+    return EpisodeListItem(
+        id=str(doc["_id"]),
+        topic=doc["topic"],
+        status=doc["status"],
+        created_at=doc["created_at"],
+        audio_url=doc.get("audio_url"),
+        duration_seconds=doc.get("duration_seconds"),
+    )
