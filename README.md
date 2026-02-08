@@ -1,11 +1,11 @@
-# PodcastGPT
+# Recapsule
 
-AI-generated two-host podcasts about any topic. Give it a subject and it researches, writes a script, and produces a full audio episode with two distinct voices.
+A podcast generator that's a time capsule to the past. Give it a subject and it researches, writes a script, and produces a full audio episode with two distinct voices.
 
 ## Project Structure
 
 ```
-PodcastGPT/
+Recapsule/
 ├── backend/            # FastAPI server + pipeline
 │   ├── app/
 │   │   ├── main.py             # FastAPI app & routes
@@ -46,7 +46,7 @@ PodcastGPT/
 
 ```bash
 # Clone and install dependencies
-git clone <repo-url> && cd PodcastGPT
+git clone <repo-url> && cd Recapsule
 cd backend
 uv sync
 

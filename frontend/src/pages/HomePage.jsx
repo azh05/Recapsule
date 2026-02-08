@@ -294,11 +294,13 @@ export default function HomePage({ searchQuery, onPlay, refreshKey }) {
         />
       ))}
 
-      <PodcastSection
-        title="Your Podcasts"
-        podcasts={podcasts}
-        delay={categoryEntries.length * 0.05}
-      />
+      {!hasActiveFilters && (
+        <PodcastSection
+          title="Your Podcasts"
+          podcasts={podcasts}
+          delay={categoryEntries.length * 0.05}
+        />
+      )}
     </div>
   );
 }
