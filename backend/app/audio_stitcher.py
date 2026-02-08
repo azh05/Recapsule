@@ -41,6 +41,7 @@ def stitch_audio(segments: list[dict], output_filename: str) -> tuple[str, float
     buffer = io.BytesIO()
     combined.export(buffer, format="mp3", bitrate="128k")
     audio_data = buffer.getvalue()
+    buffer.close()
 
     # Upload to cloud storage
     cloud_url = upload_audio(audio_data, output_filename)
