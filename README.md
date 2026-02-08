@@ -65,6 +65,8 @@ cp .env.example .env
 | `MONGODB_DB_NAME` | Database name (default: `podcastgpt`) |
 | `ELEVENLABS_VOICE_ID_HOST_A` | Voice for Host A (default: George) |
 | `ELEVENLABS_VOICE_ID_HOST_B` | Voice for Host B (default: Aria) |
+| `GCS_BUCKET_NAME` | Google Cloud Storage bucket name (optional — if set, audio uploads to GCS) |
+| `GCS_PROJECT_ID` | Google Cloud project ID (optional — required if using GCS) |
 
 ## Running
 

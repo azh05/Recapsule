@@ -6,7 +6,6 @@ export default function HomePage({ searchQuery, onPlay, refreshKey }) {
   const [episodes, setEpisodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [hideFailed, setHideFailed] = useState(false);
 
   // Fetch episodes and re-fetch when refreshKey changes (new episode created)
   useEffect(() => {
@@ -40,13 +39,16 @@ export default function HomePage({ searchQuery, onPlay, refreshKey }) {
     const hasInProgress = episodes.some(
       (ep) =>
         ep.status !== "completed" &&
-        ep.status !== "failed"
+        ep.status !== "failed" &&
+        ep.status !== "pending",
     );
 
     // If episodes just finished, do one final refresh to get the completed state
     if (!hasInProgress && prevHadInProgress.current) {
       prevHadInProgress.current = false;
-      fetchEpisodes(searchQuery).then(setEpisodes).catch(() => {});
+      fetchEpisodes(searchQuery)
+        .then(setEpisodes)
+        .catch(() => {});
       return;
     }
     prevHadInProgress.current = hasInProgress;
@@ -65,6 +67,8 @@ export default function HomePage({ searchQuery, onPlay, refreshKey }) {
     return () => clearInterval(interval);
   }, [episodes, searchQuery]);
 
+  const audioSrc = (url) => (url.startsWith("http") ? url : `/api${url}`);
+
   const handlePlay = async (episode) => {
     if (episode.status !== "completed" || !episode.audio_url) return;
     try {
@@ -72,7 +76,7 @@ export default function HomePage({ searchQuery, onPlay, refreshKey }) {
       onPlay({
         id: full.id,
         title: full.topic,
-        audioUrl: `/api${full.audio_url}`,
+        audioUrl: audioSrc(full.audio_url),
         coverImageUrl: full.cover_image_url || null,
         citations: full.citations || [],
       });
@@ -80,7 +84,7 @@ export default function HomePage({ searchQuery, onPlay, refreshKey }) {
       onPlay({
         id: episode.id,
         title: episode.topic,
-        audioUrl: `/api${episode.audio_url}`,
+        audioUrl: audioSrc(episode.audio_url),
         coverImageUrl: episode.cover_image_url || null,
         citations: [],
       });
@@ -103,10 +107,8 @@ export default function HomePage({ searchQuery, onPlay, refreshKey }) {
     );
   }
 
-  const failedCount = episodes.filter((ep) => ep.status === "failed").length;
-
   const podcasts = episodes
-    .filter((ep) => !hideFailed || ep.status !== "failed")
+    .filter((ep) => ep.status !== "failed" && ep.status !== "pending")
     .map((ep) => ({
       title: ep.topic,
       status: ep.status,
@@ -138,20 +140,6 @@ export default function HomePage({ searchQuery, onPlay, refreshKey }) {
 
   return (
     <div>
-      {failedCount > 0 && (
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={() => setHideFailed(!hideFailed)}
-            className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 border cursor-pointer ${
-              hideFailed
-                ? 'bg-[rgba(239,68,68,0.15)] text-red-400 border-[rgba(239,68,68,0.3)]'
-                : 'bg-[rgba(255,255,255,0.05)] text-text-secondary border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.1)]'
-            }`}
-          >
-            {hideFailed ? `Show failed (${failedCount})` : `Hide failed (${failedCount})`}
-          </button>
-        </div>
-      )}
       <PodcastSection title="Your Podcasts" podcasts={podcasts} />
     </div>
   );

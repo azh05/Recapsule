@@ -4,14 +4,18 @@ import traceback
 from bson import ObjectId
 
 from app import db as database
-from app.gemini_client import research_topic, generate_script
-from app.tts_client import synthesize_line
 from app.audio_stitcher import stitch_audio
 from app.citations_client import resolve_citation
+from app.config import settings
+from app.gemini_client import generate_script, research_topic
 from app.image_client import fetch_cover_image
+from app.storage import upload_audio
+from app.tts_client import synthesize_line
 
 
-async def update_status(episode_id: ObjectId, status: str, extra: dict | None = None) -> None:
+async def update_status(
+    episode_id: ObjectId, status: str, extra: dict | None = None
+) -> None:
     update = {"$set": {"status": status}}
     if extra:
         update["$set"].update(extra)
@@ -33,10 +37,14 @@ async def generate_episode(episode_id: ObjectId) -> None:
             research_topic(topic),
             fetch_cover_image(topic),
         )
-        await update_status(episode_id, "researching", {
-            "research_notes": research,
-            "cover_image_url": cover_image_url,
-        })
+        await update_status(
+            episode_id,
+            "researching",
+            {
+                "research_notes": research,
+                "cover_image_url": cover_image_url,
+            },
+        )
 
         # Step 2: Script generation
         await update_status(episode_id, "scriptwriting")
@@ -55,8 +63,17 @@ async def generate_episode(episode_id: ObjectId) -> None:
         # Step 4: Stitch audio
         await update_status(episode_id, "stitching")
         filename = str(episode_id)
-        file_path, duration, timestamps = await asyncio.to_thread(stitch_audio, segments, filename)
-        audio_url = f"/static/audio/{filename}.mp3"
+        file_path, duration, timestamps = await asyncio.to_thread(
+            stitch_audio, segments, filename
+        )
+
+        # Step 4b: Upload to GCS if configured, otherwise fall back to local path
+        if settings.gcs_bucket_name:
+            with open(file_path, "rb") as f:
+                audio_data = f.read()
+            audio_url = await asyncio.to_thread(upload_audio, audio_data, filename)
+        else:
+            audio_url = f"/static/audio/{filename}.mp3"
 
         # Step 5: Resolve citations
         citation_indices = []  # track which script line each task corresponds to
@@ -77,26 +94,32 @@ async def generate_episode(episode_id: ObjectId) -> None:
                 if result is None:
                     continue
                 line = script[idx]
-                citations.append({
-                    "timestamp_seconds": ts_map.get(idx, 0.0),
-                    "speaker": line["speaker"],
-                    "text_snippet": line["text"][:120],
-                    "query": line["citation_query"],
-                    "title": result["title"],
-                    "authors": result.get("authors", []),
-                    "published_date": result.get("published_date"),
-                    "thumbnail_url": result.get("thumbnail_url"),
-                    "source_url": result.get("source_url"),
-                    "source_name": result.get("source_name", "Google Books"),
-                })
+                citations.append(
+                    {
+                        "timestamp_seconds": ts_map.get(idx, 0.0),
+                        "speaker": line["speaker"],
+                        "text_snippet": line["text"][:120],
+                        "query": line["citation_query"],
+                        "title": result["title"],
+                        "authors": result.get("authors", []),
+                        "published_date": result.get("published_date"),
+                        "thumbnail_url": result.get("thumbnail_url"),
+                        "source_url": result.get("source_url"),
+                        "source_name": result.get("source_name", "Google Books"),
+                    }
+                )
 
         # Step 6: Mark completed
-        await update_status(episode_id, "completed", {
-            "audio_filename": f"{filename}.mp3",
-            "audio_url": audio_url,
-            "duration_seconds": duration,
-            "citations": citations if citations else None,
-        })
+        await update_status(
+            episode_id,
+            "completed",
+            {
+                "audio_filename": f"{filename}.mp3",
+                "audio_url": audio_url,
+                "duration_seconds": duration,
+                "citations": citations if citations else None,
+            },
+        )
 
     except Exception as exc:
         error_msg = f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}"
