@@ -8,6 +8,7 @@ from app.gemini_client import research_topic, generate_script
 from app.tts_client import synthesize_line
 from app.audio_stitcher import stitch_audio
 from app.citations_client import resolve_citation
+from app.image_client import fetch_cover_image
 
 
 async def update_status(episode_id: ObjectId, status: str, extra: dict | None = None) -> None:
@@ -26,10 +27,16 @@ async def generate_episode(episode_id: ObjectId) -> None:
         topic = doc["topic"]
         tone = doc.get("tone", "conversational")
 
-        # Step 1: Research
+        # Step 1: Research (+ fetch cover image in parallel)
         await update_status(episode_id, "researching")
-        research = await research_topic(topic)
-        await update_status(episode_id, "researching", {"research_notes": research})
+        research, cover_image_url = await asyncio.gather(
+            research_topic(topic),
+            fetch_cover_image(topic),
+        )
+        await update_status(episode_id, "researching", {
+            "research_notes": research,
+            "cover_image_url": cover_image_url,
+        })
 
         # Step 2: Script generation
         await update_status(episode_id, "scriptwriting")

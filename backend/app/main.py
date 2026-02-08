@@ -48,6 +48,7 @@ async def create_episode(req: GenerateRequest, background_tasks: BackgroundTasks
         "tone": req.tone.value,
         "status": "pending",
         "created_at": datetime.now(timezone.utc),
+        "cover_image_url": None,
         "research_notes": None,
         "script": None,
         "citations": None,

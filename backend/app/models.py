@@ -54,6 +54,7 @@ class EpisodeResponse(BaseModel):
     tone: str
     status: EpisodeStatus
     created_at: datetime
+    cover_image_url: str | None = None
     research_notes: str | None = None
     script: list[DialogueLine] | None = None
     citations: list[Citation] | None = None
@@ -68,6 +69,7 @@ class EpisodeListItem(BaseModel):
     tone: str
     status: EpisodeStatus
     created_at: datetime
+    cover_image_url: str | None = None
     audio_url: str | None = None
     duration_seconds: float | None = None
 
@@ -79,6 +81,7 @@ def doc_to_episode_response(doc: dict) -> EpisodeResponse:
         tone=doc.get("tone", "conversational"),
         status=doc["status"],
         created_at=doc["created_at"],
+        cover_image_url=doc.get("cover_image_url"),
         research_notes=doc.get("research_notes"),
         script=[DialogueLine(**line) for line in doc["script"]] if doc.get("script") else None,
         citations=[Citation(**c) for c in doc["citations"]] if doc.get("citations") else None,
@@ -95,6 +98,7 @@ def doc_to_episode_list_item(doc: dict) -> EpisodeListItem:
         tone=doc.get("tone", "conversational"),
         status=doc["status"],
         created_at=doc["created_at"],
+        cover_image_url=doc.get("cover_image_url"),
         audio_url=doc.get("audio_url"),
         duration_seconds=doc.get("duration_seconds"),
     )

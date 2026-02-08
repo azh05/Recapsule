@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import PodcastSection from "../components/PodcastSection";
-import { fetchEpisodes } from "../api/episodes";
+import { fetchEpisodes, fetchEpisode } from "../api/episodes";
 
-export default function HomePage({ searchQuery, onPlay }) {
+export default function HomePage({ searchQuery, onPlay, refreshKey }) {
   const [episodes, setEpisodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hideFailed, setHideFailed] = useState(false);
 
+  // Fetch episodes and re-fetch when refreshKey changes (new episode created)
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(async () => {
@@ -30,15 +32,59 @@ export default function HomePage({ searchQuery, onPlay }) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [searchQuery]);
+  }, [searchQuery, refreshKey]);
 
-  const handlePlay = (episode) => {
+  // Poll for in-progress episodes every 5 seconds
+  const prevHadInProgress = useRef(false);
+  useEffect(() => {
+    const hasInProgress = episodes.some(
+      (ep) =>
+        ep.status !== "completed" &&
+        ep.status !== "failed"
+    );
+
+    // If episodes just finished, do one final refresh to get the completed state
+    if (!hasInProgress && prevHadInProgress.current) {
+      prevHadInProgress.current = false;
+      fetchEpisodes(searchQuery).then(setEpisodes).catch(() => {});
+      return;
+    }
+    prevHadInProgress.current = hasInProgress;
+
+    if (!hasInProgress) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const data = await fetchEpisodes(searchQuery);
+        setEpisodes(data);
+      } catch {
+        // silently ignore polling errors
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [episodes, searchQuery]);
+
+  const handlePlay = async (episode) => {
     if (episode.status !== "completed" || !episode.audio_url) return;
-    onPlay({
-      id: episode.id,
-      title: episode.topic,
-      audioUrl: `/api${episode.audio_url}`,
-    });
+    try {
+      const full = await fetchEpisode(episode.id);
+      onPlay({
+        id: full.id,
+        title: full.topic,
+        audioUrl: `/api${full.audio_url}`,
+        coverImageUrl: full.cover_image_url || null,
+        citations: full.citations || [],
+      });
+    } catch {
+      onPlay({
+        id: episode.id,
+        title: episode.topic,
+        audioUrl: `/api${episode.audio_url}`,
+        coverImageUrl: episode.cover_image_url || null,
+        citations: [],
+      });
+    }
   };
 
   if (loading) {
@@ -57,11 +103,14 @@ export default function HomePage({ searchQuery, onPlay }) {
     );
   }
 
+  const failedCount = episodes.filter((ep) => ep.status === "failed").length;
+
   const podcasts = episodes
-    .filter((ep) => ep.status !== "failed" && ep.status !== "pending")
+    .filter((ep) => !hideFailed || ep.status !== "failed")
     .map((ep) => ({
       title: ep.topic,
       status: ep.status,
+      coverImageUrl: ep.cover_image_url,
       audioUrl: ep.audio_url,
       key: ep.id,
       onPlay: () => handlePlay(ep),
@@ -69,15 +118,41 @@ export default function HomePage({ searchQuery, onPlay }) {
 
   if (podcasts.length === 0) {
     return (
-      <div className="flex justify-center items-center min-h-[40vh]">
+      <div className="flex flex-col justify-center items-center min-h-[40vh] gap-6">
         <p className="text-text-secondary text-lg">
           {searchQuery
             ? "No episodes match your search."
-            : "No episodes yet. Generate one from the API!"}
+            : "No episodes yet. Create your first podcast!"}
         </p>
+        {!searchQuery && (
+          <a
+            href="/create"
+            className="px-6 py-3 bg-gradient-to-r from-accent-primary to-[#ff8f5a] text-white font-bold rounded-full no-underline transition-all duration-300 shadow-[0_4px_15px_rgba(255,107,53,0.3)] hover:shadow-[0_6px_25px_rgba(255,107,53,0.5)] hover:-translate-y-0.5"
+          >
+            + Create Podcast
+          </a>
+        )}
       </div>
     );
   }
 
-  return <PodcastSection title="Recommended for You" podcasts={podcasts} />;
+  return (
+    <div>
+      {failedCount > 0 && (
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => setHideFailed(!hideFailed)}
+            className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 border cursor-pointer ${
+              hideFailed
+                ? 'bg-[rgba(239,68,68,0.15)] text-red-400 border-[rgba(239,68,68,0.3)]'
+                : 'bg-[rgba(255,255,255,0.05)] text-text-secondary border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.1)]'
+            }`}
+          >
+            {hideFailed ? `Show failed (${failedCount})` : `Hide failed (${failedCount})`}
+          </button>
+        </div>
+      )}
+      <PodcastSection title="Your Podcasts" podcasts={podcasts} />
+    </div>
+  );
 }
