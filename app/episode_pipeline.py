@@ -23,6 +23,7 @@ async def generate_episode(episode_id: ObjectId) -> None:
             return
 
         topic = doc["topic"]
+        tone = doc.get("tone", "conversational")
 
         # Step 1: Research
         await update_status(episode_id, "researching")
@@ -31,7 +32,7 @@ async def generate_episode(episode_id: ObjectId) -> None:
 
         # Step 2: Script generation
         await update_status(episode_id, "scriptwriting")
-        script = await generate_script(topic, research)
+        script = await generate_script(topic, research, tone)
         await update_status(episode_id, "scriptwriting", {"script": script})
 
         # Step 3: TTS for each line

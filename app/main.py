@@ -38,6 +38,7 @@ async def health():
 async def create_episode(req: GenerateRequest, background_tasks: BackgroundTasks):
     doc = {
         "topic": req.topic,
+        "tone": req.tone.value,
         "status": "pending",
         "created_at": datetime.now(timezone.utc),
         "research_notes": None,

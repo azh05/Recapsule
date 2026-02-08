@@ -21,14 +21,23 @@ RESEARCH_SYSTEM_PROMPT = (
     "Organize your findings clearly with headers. Be thorough but concise."
 )
 
-SCRIPT_SYSTEM_PROMPT = """\
-You are a podcast script writer. Write a conversational dialogue between two hosts:
+TONE_STYLES = {
+    "conversational": "Keep it friendly and casual. Use natural speech patterns, occasional filler words, and make it feel like friends chatting.",
+    "professional": "Maintain a polished, authoritative tone. Use clear, precise language. Keep reactions measured and informative.",
+    "humorous": "Make it fun and entertaining! Include witty observations, playful banter, jokes, and lighthearted commentary. Don't be afraid to be silly.",
+    "dramatic": "Build tension and intrigue. Use vivid descriptive language, dramatic pauses, and emotional reactions. Make it feel cinematic.",
+    "educational": "Focus on clear explanations and learning. Break down complex concepts, use analogies, and ensure the audience understands key points.",
+    "casual": "Keep it super relaxed and laid-back. Use slang, informal expressions, and make it feel like an easy-going conversation.",
+}
+
+SCRIPT_SYSTEM_PROMPT_BASE = """\
+You are a podcast script writer. Write a dialogue between two hosts:
 - HOST_A: The main narrator. Enthusiastic, knowledgeable, drives the story forward.
-- HOST_B: The curious co-host. Asks great questions, reacts with surprise, adds humor.
+- HOST_B: The curious co-host. Asks great questions, reacts with surprise, adds engagement.
 
 Rules:
 - Write 15-25 exchanges total (aiming for a 3-5 minute episode).
-- Make it feel natural: use filler words occasionally, interruptions, reactions like "Wow" or "No way".
+- Make it feel natural with reactions and follow-up questions.
 - HOST_A explains and storytells; HOST_B asks follow-ups and makes relatable comparisons.
 - Start with a hook, build through the middle, end with a memorable takeaway.
 
@@ -50,7 +59,10 @@ async def research_topic(topic: str) -> str:
     return response.text
 
 
-async def generate_script(topic: str, research: str) -> list[dict]:
+async def generate_script(topic: str, research: str, tone: str = "conversational") -> list[dict]:
+    tone_instruction = TONE_STYLES.get(tone, TONE_STYLES["conversational"])
+    system_prompt = f"{SCRIPT_SYSTEM_PROMPT_BASE}\n\nTONE GUIDANCE: {tone_instruction}"
+    
     prompt = (
         f"Topic: {topic}\n\n"
         f"Research notes:\n{research}\n\n"
@@ -60,7 +72,7 @@ async def generate_script(topic: str, research: str) -> list[dict]:
         model="gemini-3-pro-preview",
         contents=prompt,
         config=types.GenerateContentConfig(
-            system_instruction=SCRIPT_SYSTEM_PROMPT,
+            system_instruction=system_prompt,
             temperature=0.7,
             response_mime_type="application/json",
         ),

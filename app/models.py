@@ -14,8 +14,18 @@ class EpisodeStatus(str, Enum):
     failed = "failed"
 
 
+class ToneStyle(str, Enum):
+    conversational = "conversational"
+    professional = "professional"
+    humorous = "humorous"
+    dramatic = "dramatic"
+    educational = "educational"
+    casual = "casual"
+
+
 class GenerateRequest(BaseModel):
     topic: str = Field(..., min_length=3, max_length=200)
+    tone: ToneStyle = Field(default=ToneStyle.conversational, description="The tone and style of the podcast")
 
 
 class DialogueLine(BaseModel):
@@ -26,6 +36,7 @@ class DialogueLine(BaseModel):
 class EpisodeResponse(BaseModel):
     id: str
     topic: str
+    tone: str
     status: EpisodeStatus
     created_at: datetime
     research_notes: str | None = None
@@ -38,6 +49,7 @@ class EpisodeResponse(BaseModel):
 class EpisodeListItem(BaseModel):
     id: str
     topic: str
+    tone: str
     status: EpisodeStatus
     created_at: datetime
     audio_url: str | None = None
@@ -48,6 +60,7 @@ def doc_to_episode_response(doc: dict) -> EpisodeResponse:
     return EpisodeResponse(
         id=str(doc["_id"]),
         topic=doc["topic"],
+        tone=doc.get("tone", "conversational"),
         status=doc["status"],
         created_at=doc["created_at"],
         research_notes=doc.get("research_notes"),
@@ -62,6 +75,7 @@ def doc_to_episode_list_item(doc: dict) -> EpisodeListItem:
     return EpisodeListItem(
         id=str(doc["_id"]),
         topic=doc["topic"],
+        tone=doc.get("tone", "conversational"),
         status=doc["status"],
         created_at=doc["created_at"],
         audio_url=doc.get("audio_url"),
