@@ -21,3 +21,7 @@ backend/static/audio/*.mp3
 
 # uv
 .python-version
+
+# Frontend
+node_modules/
+frontend/dist/
