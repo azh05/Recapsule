@@ -2,6 +2,29 @@
 
 AI-generated two-host podcasts about any topic. Give it a subject and it researches, writes a script, and produces a full audio episode with two distinct voices.
 
+## Project Structure
+
+```
+PodcastGPT/
+├── backend/            # FastAPI server + pipeline
+│   ├── app/
+│   │   ├── main.py             # FastAPI app & routes
+│   │   ├── config.py           # Settings (env vars)
+│   │   ├── db.py               # MongoDB connection
+│   │   ├── models.py           # Pydantic schemas
+│   │   ├── gemini_client.py    # Gemini research & scripting
+│   │   ├── tts_client.py       # ElevenLabs TTS
+│   │   ├── audio_stitcher.py   # pydub audio assembly
+│   │   └── episode_pipeline.py # End-to-end generation
+│   ├── static/audio/           # Generated MP3 output
+│   ├── pyproject.toml
+│   ├── uv.lock
+│   └── .env.example
+├── frontend/           # Web UI
+│   └── podcast-ui.html
+└── README.md
+```
+
 ## Tech Stack
 
 - **FastAPI** — async web framework
@@ -24,6 +47,7 @@ AI-generated two-host podcasts about any topic. Give it a subject and it researc
 ```bash
 # Clone and install dependencies
 git clone <repo-url> && cd PodcastGPT
+cd backend
 uv sync
 
 # Configure environment
@@ -45,10 +69,13 @@ cp .env.example .env
 ## Running
 
 ```bash
+cd backend
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
 API docs available at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+To preview the frontend, open `frontend/podcast-ui.html` in a browser.
 
 ## API Endpoints
 
