@@ -44,24 +44,40 @@ Rules:
 - HOST_A explains and storytells; HOST_B asks follow-ups and makes relatable comparisons.
 - Start with a hook, build through the middle, end with a memorable takeaway.
 
-CITATIONS (important):
+CRITICAL: USE THE PROVIDED RESEARCH SOURCES
+You MUST base the script content on the research notes provided. Do not make up facts
+or information that isn't supported by the research. Every claim, fact, or story element
+should come from the provided research materials. This ensures accuracy and credibility.
+
+CITATIONS (REQUIRED when applicable):
 When the dialogue mentions a specific document, book, letter, speech, painting,
-artwork, scientific paper, or primary source, add a "citation_query" field to that
-JSON object with a concise, search-friendly query string that could be used to find
-that source (e.g. "Van Gogh letters to Theo", "Origin of Species Charles Darwin").
-Only include citation_query when referencing a real, specific, verifiable source.
-Do NOT add citation_query for general statements or opinions.
+artwork, scientific paper, or primary source from the research, you MUST add a
+"citation_query" field to that JSON object with a concise, search-friendly query
+string that could be used to find that source (e.g. "Van Gogh letters to Theo",
+"Origin of Species Charles Darwin"). Always include citation_query when referencing
+a real, specific, verifiable source. Do NOT add citation_query for general statements
+or opinions.
 
 Return ONLY a JSON array of objects. Each object MUST have "speaker" and "text".
-Optionally include "citation_query" when a specific source is referenced.
+Include "citation_query" when a specific source is referenced.
 Example: [{"speaker": "host_a", "text": "Welcome back..."}, {"speaker": "host_a", "text": "In his diary, Columbus wrote...", "citation_query": "Christopher Columbus diary journal"}]
 """
 
 
 ALLOWED_CATEGORIES = {
-    "technology", "science", "history", "politics", "health",
-    "business", "entertainment", "sports", "education", "culture",
-    "philosophy", "art", "other",
+    "technology",
+    "science",
+    "history",
+    "politics",
+    "health",
+    "business",
+    "entertainment",
+    "sports",
+    "education",
+    "culture",
+    "philosophy",
+    "art",
+    "other",
 }
 
 CATEGORIZE_SYSTEM_PROMPT = (
@@ -108,14 +124,18 @@ async def research_topic(topic: str) -> str:
     return response.text
 
 
-async def generate_script(topic: str, research: str, tone: str = "conversational") -> list[dict]:
+async def generate_script(
+    topic: str, research: str, tone: str = "conversational"
+) -> list[dict]:
     tone_instruction = TONE_STYLES.get(tone, TONE_STYLES["conversational"])
     system_prompt = f"{SCRIPT_SYSTEM_PROMPT_BASE}\n\nTONE GUIDANCE: {tone_instruction}"
-    
+
     prompt = (
         f"Topic: {topic}\n\n"
         f"Research notes:\n{research}\n\n"
-        "Now write the podcast script as a JSON array."
+        "IMPORTANT: Base your script ENTIRELY on the research notes above. "
+        "Use the facts, anecdotes, and details from the research to create an "
+        "accurate, engaging dialogue. Now write the podcast script as a JSON array."
     )
     response = await _get_client().aio.models.generate_content(
         model="gemini-3-pro-preview",
