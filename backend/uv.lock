@@ -613,6 +613,7 @@ name = "podcastgpt"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "certifi" },
     { name = "elevenlabs" },
     { name = "fastapi" },
     { name = "google-cloud-storage" },
@@ -630,6 +631,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "certifi", specifier = ">=2026.1.4" },
     { name = "elevenlabs", specifier = ">=2.34.0" },
     { name = "fastapi", specifier = ">=0.128.4" },
     { name = "google-cloud-storage", specifier = ">=2.14.0" },
