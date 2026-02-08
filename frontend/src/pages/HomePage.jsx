@@ -1,26 +1,36 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import PodcastSection from "../components/PodcastSection";
-import { fetchEpisodes, fetchEpisode, regenerateEpisode } from "../api/episodes";
+import {
+  fetchEpisodes,
+  fetchEpisode,
+  regenerateEpisode,
+} from "../api/episodes";
 
 export default function HomePage({ searchQuery, onPlay, refreshKey }) {
   const [episodes, setEpisodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-<<<<<<< HEAD
-=======
   const [hideFailed, setHideFailed] = useState(true);
   const [toasts, setToasts] = useState([]); // { id, topic }
   const prevEpisodesRef = useRef([]);
 
   // Detect newly failed episodes and show toast
   const checkForNewFailures = (newEpisodes) => {
-    const prevMap = new Map(prevEpisodesRef.current.map((ep) => [ep.id, ep.status]));
+    const prevMap = new Map(
+      prevEpisodesRef.current.map((ep) => [ep.id, ep.status]),
+    );
     const newlyFailed = newEpisodes.filter(
-      (ep) => ep.status === "failed" && prevMap.has(ep.id) && prevMap.get(ep.id) !== "failed"
+      (ep) =>
+        ep.status === "failed" &&
+        prevMap.has(ep.id) &&
+        prevMap.get(ep.id) !== "failed",
     );
     if (newlyFailed.length > 0) {
-      const newToasts = newlyFailed.map((ep) => ({ id: ep.id, topic: ep.topic }));
+      const newToasts = newlyFailed.map((ep) => ({
+        id: ep.id,
+        topic: ep.topic,
+      }));
       setToasts((prev) => [...prev, ...newToasts]);
     }
     prevEpisodesRef.current = newEpisodes;
@@ -38,7 +48,6 @@ export default function HomePage({ searchQuery, onPlay, refreshKey }) {
     }, 6000);
     return () => clearTimeout(timer);
   }, [toasts]);
->>>>>>> 1c0a9a5b8672574458bba5b7b702c75e06e07813
 
   // Fetch episodes and re-fetch when refreshKey changes (new episode created)
   useEffect(() => {
@@ -153,8 +162,15 @@ export default function HomePage({ searchQuery, onPlay, refreshKey }) {
     );
   }
 
+  const failedEpisodes = episodes.filter((ep) => ep.status === "failed");
+  const failedCount = failedEpisodes.length;
+
   const podcasts = episodes
-    .filter((ep) => ep.status !== "failed" && ep.status !== "pending")
+    .filter((ep) => {
+      if (ep.status === "pending") return false;
+      if (ep.status === "failed") return !hideFailed;
+      return true;
+    })
     .map((ep) => ({
       id: ep.id,
       title: ep.topic,
@@ -163,7 +179,8 @@ export default function HomePage({ searchQuery, onPlay, refreshKey }) {
       audioUrl: ep.audio_url,
       key: ep.id,
       onPlay: () => handlePlay(ep),
-      onRegenerate: ep.status === "failed" ? () => handleRegenerate(ep) : undefined,
+      onRegenerate:
+        ep.status === "failed" ? () => handleRegenerate(ep) : undefined,
     }));
 
   if (podcasts.length === 0) {
@@ -196,20 +213,44 @@ export default function HomePage({ searchQuery, onPlay, refreshKey }) {
             className="flex items-start gap-3 px-4 py-3 bg-[rgba(30,30,38,0.95)] backdrop-blur-xl border border-[rgba(239,68,68,0.4)] rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.4)] animate-fade-in-up"
           >
             <div className="w-8 h-8 rounded-full bg-[rgba(239,68,68,0.15)] flex items-center justify-center shrink-0 mt-0.5">
-              <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-4 h-4 text-red-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-red-400">Generation failed</p>
-              <p className="text-xs text-text-secondary mt-0.5 truncate">"{toast.topic}"</p>
+              <p className="text-sm font-semibold text-red-400">
+                Generation failed
+              </p>
+              <p className="text-xs text-text-secondary mt-0.5 truncate">
+                "{toast.topic}"
+              </p>
             </div>
             <button
               onClick={() => dismissToast(toast.id)}
               className="text-text-muted hover:text-text-primary transition-colors duration-200 cursor-pointer bg-transparent border-none p-1"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -222,11 +263,13 @@ export default function HomePage({ searchQuery, onPlay, refreshKey }) {
             onClick={() => setHideFailed(!hideFailed)}
             className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 border cursor-pointer ${
               hideFailed
-                ? 'bg-[rgba(239,68,68,0.15)] text-red-400 border-[rgba(239,68,68,0.3)]'
-                : 'bg-[rgba(255,255,255,0.05)] text-text-secondary border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.1)]'
+                ? "bg-[rgba(239,68,68,0.15)] text-red-400 border-[rgba(239,68,68,0.3)]"
+                : "bg-[rgba(255,255,255,0.05)] text-text-secondary border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.1)]"
             }`}
           >
-            {hideFailed ? `Show failed (${failedCount})` : `Hide failed (${failedCount})`}
+            {hideFailed
+              ? `Show failed (${failedCount})`
+              : `Hide failed (${failedCount})`}
           </button>
         </div>
       )}
